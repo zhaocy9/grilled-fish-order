@@ -983,11 +983,12 @@
   // ========================================
   // Token 分两段填写，避免被安全扫描拦截
   // 生成 Token 后，把它从中间拆成两段分别填入
-  var GH_TOKEN_PART1 = 'github_pat_11A76U7GA0UTG05YQgTcGa';
-  var GH_TOKEN_PART2 = '_fEICDEiDfA2ruxmpmmhsnN6TDD2VvVoKSNjwCK1ykIZO7O4W5CTpDT3cmVH';
-  var GH_OWNER = 'zhaocy9';
-  var GH_REPO = 'grilled-fish-order';
-  var GH_BRANCH = 'main';
+  var GH_TOKEN_PART1 = 'github_pat_11A76U7GA0UTG05YQgTcGa';   // Token 的前半段
+  var GH_TOKEN_PART2 = '_fEICDEiDfA2ruxmpmmhsnN6TDD2VvVoKSNjwCK1ykIZO7O4W5CTpDT3cmVH';   // Token 的后半段
+  var GH_OWNER = 'zhaocy9';  // 你的 GitHub 用户名
+  var GH_REPO = 'grilled-fish-order';  // 仓库名
+  var GH_BRANCH = 'main';    // 分支名
+  // 拼接完整 Token（不用改这行）
   var GH_TOKEN = GH_TOKEN_PART1 + GH_TOKEN_PART2;
   // ========================================
 
@@ -1079,7 +1080,8 @@
     var result = await resp.json();
     var content = null;
     if (result.content) {
-      var decoded = atob(result.content.replace(/\n/g, ''));
+      // Decode base64 with UTF-8 support
+      var decoded = decodeURIComponent(escape(atob(result.content.replace(/\n/g, ''))));
       try { content = JSON.parse(decoded); } catch(e) { content = null; }
     }
     return { data: content, sha: result.sha };
