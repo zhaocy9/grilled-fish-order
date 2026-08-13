@@ -44,7 +44,7 @@
   .hero {
     position: relative;
     min-height: 280px;
-    background-image: url('摊位背景.jpg');
+    background-image: url('stall-bg.jpg');
     background-size: cover;
     background-position: center;
     display: flex;
@@ -983,8 +983,8 @@
   // ========================================
   // Token 分两段填写，避免被安全扫描拦截
   // 生成 Token 后，把它从中间拆成两段分别填入
-  var GH_TOKEN_PART1 = 'github_pat_11A76U7GA0UTG05YQgTcGa';   // Token 的前半段
-  var GH_TOKEN_PART2 = '_fEICDEiDfA2ruxmpmmhsnN6TDD2VvVoKSNjwCK1ykIZO7O4W5CTpDT3cmVH';   // Token 的后半段
+  var GH_TOKEN_PART1 = '';   // Token 的前半段
+  var GH_TOKEN_PART2 = '';   // Token 的后半段
   var GH_OWNER = 'zhaocy9';  // 你的 GitHub 用户名
   var GH_REPO = 'grilled-fish-order';  // 仓库名
   var GH_BRANCH = 'main';    // 分支名
@@ -1116,9 +1116,6 @@
     return result.data || [];
   }
   async function apiAddOrder(order) {
-    // Read latest, append, write back
-    var result = await ghReadFile('data/orders.json');
-    var orders = result.data || [];
     var newOrder = {
       id: 'ord_' + Date.now() + '_' + Math.floor(Math.random()*1000),
       date: order.date,
@@ -1128,16 +1125,36 @@
       notes: order.notes || '',
       createdAt: new Date().toISOString()
     };
-    orders.push(newOrder);
-    ordersSha = await ghWriteFile('data/orders.json', orders, result.sha, '新预订: ' + order.name + ' ' + order.date);
-    return { success: true };
+    // Retry loop: re-read latest data on conflict
+    for (var attempt = 0; attempt < 3; attempt++) {
+      var result = await ghReadFile('data/orders.json');
+      var orders = result.data || [];
+      orders.push(newOrder);
+      try {
+        ordersSha = await ghWriteFile('data/orders.json', orders, result.sha, '新预订: ' + order.name + ' ' + order.date);
+        return { success: true };
+      } catch(e) {
+        if (attempt < 2) { await new Promise(function(r){ setTimeout(r, 500); }); continue; }
+        throw e;
+      }
+    }
+    return { success: false };
   }
   async function apiDeleteOrder(id) {
-    var result = await ghReadFile('data/orders.json');
-    var orders = result.data || [];
-    orders = orders.filter(function(o) { return String(o.id) !== String(id); });
-    ordersSha = await ghWriteFile('data/orders.json', orders, result.sha, '删除预订 ' + id);
-    return { success: true };
+    // Retry loop: re-read latest data on conflict
+    for (var attempt = 0; attempt < 3; attempt++) {
+      var result = await ghReadFile('data/orders.json');
+      var orders = result.data || [];
+      orders = orders.filter(function(o) { return String(o.id) !== String(id); });
+      try {
+        ordersSha = await ghWriteFile('data/orders.json', orders, result.sha, '删除预订 ' + id);
+        return { success: true };
+      } catch(e) {
+        if (attempt < 2) { await new Promise(function(r){ setTimeout(r, 500); }); continue; }
+        throw e;
+      }
+    }
+    return { success: false };
   }
   async function apiGetRestDays() {
     var result = await ghReadFile('data/rest-days.json');
