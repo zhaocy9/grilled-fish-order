@@ -226,14 +226,12 @@
     box-shadow: 0 3px 12px rgba(247,127,0,0.35);
   }
   .cal-day.past {
-    opacity: 0.3;
-    pointer-events: none;
+    opacity: 0.5;
   }
   .cal-day.rest {
     background: rgba(230,57,70,0.12);
     border-color: rgba(230,57,70,0.3);
     color: var(--danger);
-    pointer-events: none;
   }
   .cal-day.rest .rest-label {
     font-size: 9px;
@@ -271,8 +269,7 @@
     letter-spacing: 1px;
   }
   .cal-day.locked {
-    opacity: 0.35;
-    pointer-events: none;
+    opacity: 0.5;
   }
   .cal-day.tomorrow.selected .tomorrow-label {
     color: #FFF;
@@ -1340,10 +1337,12 @@
       if(bossMode && !isPast) {
         cls += ' boss-rest-toggle';
         onclickStr = ' onclick="window._toggleRest(\'' + dateStr + '\')"';
-      } else if(!isPast && !isRest && isTomorrow) {
+      } else if(isTomorrow && !isRest) {
         onclickStr = ' onclick="window._selectDate(\'' + dateStr + '\')"';
-      } else if(!isPast && !isRest && !isTomorrow) {
-        cls += ' locked';
+      } else {
+        // 所有其他日期也可点击查看（过去日期、今天、休息日、未来非次日）
+        onclickStr = ' onclick="window._selectDate(\'' + dateStr + '\')"';
+        if(!isPast && !isRest && !isToday) cls += ' locked';
       }
 
       html += '<div class="' + cls + '"' + onclickStr + '>';
