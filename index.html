@@ -909,13 +909,13 @@
       </div>
 
       <div class="form-group">
-        <label>选择菜品（点击 +/- 调整数量）</label>
+        <label>预订烤鱼（点击 +/- 调整数量）</label>
         <div class="item-picker" id="itemPicker"></div>
       </div>
 
       <div class="order-total">
-        <span class="total-label">合计金额</span>
-        <span class="total-amount"><span class="yen">¥</span><span id="totalAmount">0</span></span>
+        <span class="total-label">预订数量</span>
+        <span class="total-amount"><span id="totalAmount">0</span> 条烤鱼</span>
       </div>
 
       <div class="form-group">
@@ -1231,19 +1231,16 @@
   // ============ Render Item Picker ============
   function renderItemPicker() {
     var html = '';
-    for(var i=0; i<MENU.length; i++) {
-      var m = MENU[i];
-      var qty = itemQuantities[m.name] || 0;
-      html += '<div class="item-row">';
-      html += '<span class="item-name">' + m.emoji + ' ' + m.name + '</span>';
-      html += '<span class="item-price-small">¥' + m.price + '/' + m.unit + '</span>';
-      html += '<div class="qty-control">';
-      html += '<button type="button" class="qty-btn minus" onclick="window._changeQty(\'' + m.name + '\',-1)">−</button>';
-      html += '<span class="qty-display ' + (qty===0?'zero':'') + '" id="qty_' + m.name + '">' + qty + '</span>';
-      html += '<button type="button" class="qty-btn plus" onclick="window._changeQty(\'' + m.name + '\',1)">+</button>';
-      html += '</div>';
-      html += '</div>';
-    }
+    var fishItem = { name: '烤鱼', emoji: '🐟' };
+    var qty = itemQuantities[fishItem.name] || 0;
+    html += '<div class="item-row">';
+    html += '<span class="item-name">' + fishItem.emoji + ' ' + fishItem.name + '</span>';
+    html += '<div class="qty-control">';
+    html += '<button type="button" class="qty-btn minus" onclick="window._changeQty(\'' + fishItem.name + '\',-1)">−</button>';
+    html += '<span class="qty-display ' + (qty===0?'zero':'') + '" id="qty_' + fishItem.name + '">' + qty + '</span>';
+    html += '<button type="button" class="qty-btn plus" onclick="window._changeQty(\'' + fishItem.name + '\',1)">+</button>';
+    html += '</div>';
+    html += '</div>';
     $itemPicker.innerHTML = html;
   }
 
@@ -1261,22 +1258,14 @@
   }
 
   function updateTotal() {
-    var total = 0;
-    for(var i=0; i<MENU.length; i++) {
-      var m = MENU[i];
-      var qty = itemQuantities[m.name] || 0;
-      if(qty > 0) total += qty * m.price;
-    }
+    var total = itemQuantities['烤鱼'] || 0;
     $totalAmount.textContent = total;
   }
 
   function getSelectedItems() {
     var items = [];
-    for(var i=0; i<MENU.length; i++) {
-      var m = MENU[i];
-      var qty = itemQuantities[m.name] || 0;
-      if(qty > 0) items.push({ name: m.name, price: m.price, unit: m.unit, qty: qty });
-    }
+    var qty = itemQuantities['烤鱼'] || 0;
+    if(qty > 0) items.push({ name: '烤鱼', qty: qty });
     return items;
   }
 
@@ -1377,13 +1366,13 @@
       html += '<span class="guest-count" style="color:var(--danger)">今日休息</span>';
     } else if(isTomorrow) {
       if(guestCount > 0) {
-        html += '<span class="guest-count" style="color:var(--success);border-color:var(--success)">✓ 可预订 · 已订 <strong>' + guestCount + '</strong> 位 · ¥' + revenue + '</span>';
+        html += '<span class="guest-count" style="color:var(--success);border-color:var(--success)">✓ 可预订 · 已订 <strong>' + guestCount + '</strong> 位</span>';
       } else {
         html += '<span class="guest-count" style="color:var(--success);border-color:var(--success)">✓ 可预订</span>';
       }
     } else {
       if(guestCount > 0) {
-        html += '<span class="guest-count">仅查看 · 已订 <strong>' + guestCount + '</strong> 位 · ¥' + revenue + '</span>';
+        html += '<span class="guest-count">仅查看 · 已订 <strong>' + guestCount + '</strong> 位</span>';
       } else {
         html += '<span class="guest-count">仅查看</span>';
       }
@@ -1411,13 +1400,12 @@
     dateOrders.sort(function(a,b){ return new Date(a.createdAt) - new Date(b.createdAt); });
 
     var html = '<table class="guest-table"><thead><tr>';
-    html += '<th>#</th><th>姓名</th><th>预订菜品</th><th>合计</th><th>时间</th><th></th>';
+    html += '<th>#</th><th>姓名</th><th>预订菜品</th><th>时间</th><th></th>';
     html += '</tr></thead><tbody>';
 
     for(var i=0; i<dateOrders.length; i++) {
       var order = dateOrders[i];
       var items = order.items || [];
-      var total = calcOrderTotal(items);
       var timeStr = '';
       try {
         var dd = new Date(order.createdAt);
@@ -1436,19 +1424,13 @@
         }
       }
       html += '</td>';
-      html += '<td class="col-total">¥' + total + '</td>';
       html += '<td class="col-time">' + timeStr + '</td>';
       html += '<td><button class="btn-delete-row" onclick="window._deleteOrder(\'' + order.id + '\')">✕</button></td>';
       html += '</tr>';
     }
 
-    var grandTotal = 0;
-    for(var k=0; k<dateOrders.length; k++) {
-      grandTotal += calcOrderTotal(dateOrders[k].items || []);
-    }
-    html += '<tr style="border-top:2px solid var(--border)"><td colspan="3" style="text-align:right;font-weight:700;color:var(--gold);font-size:14px;">当日总计 (' + dateOrders.length + '位)</td>';
-    html += '<td class="col-total" style="font-size:18px;color:var(--gold);">¥' + grandTotal + '</td>';
-    html += '<td colspan="2"></td></tr>';
+    html += '<tr style="border-top:2px solid var(--border)"><td colspan="2" style="text-align:right;font-weight:700;color:var(--gold);font-size:14px;">当日总计 (' + dateOrders.length + '位)</td>';
+    html += '<td colspan="3"></td></tr>';
 
     html += '</tbody></table>';
     $guestListContainer.innerHTML = html;
@@ -1459,9 +1441,8 @@
     var dateMap = {};
     for(var i=0; i<allOrders.length; i++) {
       var d = allOrders[i].date;
-      if(!dateMap[d]) dateMap[d] = { count: 0, revenue: 0 };
+      if(!dateMap[d]) dateMap[d] = { count: 0 };
       dateMap[d].count++;
-      dateMap[d].revenue += calcOrderTotal(allOrders[i].items || []);
     }
     var dates = Object.keys(dateMap).sort();
     if(dates.length === 0) {
@@ -1477,7 +1458,6 @@
       html += '<div class="s-date">' + fmtDate(dd) + ' ' + getDayName(dd) + (isRest?' 休':'') + '</div>';
       html += '<div class="s-count">' + dateMap[dd].count + '</div>';
       html += '<div class="s-label">位预订</div>';
-      html += '<div class="s-revenue">¥' + dateMap[dd].revenue + '</div>';
       html += '</div>';
     }
     $summaryGrid.innerHTML = html;
@@ -1566,7 +1546,7 @@
     var items = getSelectedItems();
 
     if(!name || !contact) { showToast('请填写姓名和联系方式','error'); return; }
-    if(items.length === 0) { showToast('请至少选择一样菜品','error'); return; }
+    if(items.length === 0) { showToast('请选择烤鱼数量（至少1条）','error'); return; }
 
     $btnSubmit.classList.add('loading');
     $btnSubmit.disabled = true;
@@ -1605,14 +1585,13 @@
   // ============ Export ============
   function exportCSV() {
     if (allOrders.length === 0) { showToast('暂无数据可导出','error'); return; }
-    var rows = [['日期','星期','姓名','联系方式','菜品明细','合计金额','备注','下单时间']];
+    var rows = [['日期','星期','姓名','联系方式','菜品明细','备注','下单时间']];
     for (var i=0; i<allOrders.length; i++) {
       var o = allOrders[i];
       var items = (o.items||[]).map(function(it){ return it.name + 'x' + it.qty; }).join('、');
-      var total = calcOrderTotal(o.items||[]);
       var timeStr = '';
       try { var d = new Date(o.createdAt); timeStr = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); } catch(e){}
-      rows.push([o.date, getDayName(o.date), o.name, o.contact, items, total, o.notes||'', timeStr]);
+      rows.push([o.date, getDayName(o.date), o.name, o.contact, items, o.notes||'', timeStr]);
     }
     var csv = '\uFEFF'; // BOM for Excel
     for (var r=0; r<rows.length; r++) {
